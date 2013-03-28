@@ -1,0 +1,276 @@
+%\VignetteIndexEntry{Webscrape Match Data}
+%\VignettePackage{fbRanks}
+\documentclass[12pt]{article}
+\usepackage[landscape]{geometry}
+\usepackage{hyperref}
+\usepackage{listings}
+\lstset{
+    breaklines     = true,
+    stepnumber     = 5,
+    basicstyle=\footnotesize\ttfamily
+}
+
+\title{Webscraping Match Data: example using B00s in WA, OR, and BC}
+\author{}
+\begin{document}
+\maketitle
+\SweaveOpts{concordance=TRUE}
+<<RUNFIRST, echo=FALSE>>=
+options(prompt=" ", continue=" ")
+@
+
+Collecting the match data is a time-consuming task.  The fbRanks package has a number of webscrapers that were built to webscrape US West Coast league and tournament data.  Html is fluid and webscrapers quickly succumb to code rot.  However, the webscraping code will give you a start for writing your own webscrapers.  My webscrapers use the XML, RCurl, httr, and RJSONIO packages. There is some overlap between what these packages do, but I found that some pages could be scraped easily with functions in one package while another page was more easily scraped with functions from another package.   
+
+The scrapers are written for particular content manager platforms that are used to show schedules and results.  On the US west coast, Demosphere, SportAffinity, GotSport and Korrio are the main platforms. Demosphere and Korrio will also supply surface information (Turf/Grass) that can be scraped.  Other leagues use idiosyncratic webpages for showing match results and these require custom scrapers.  Finally, some leagues heavily use Javascript in displaying match results, which makes is very hard to scrape unless you can decipher a link to the JSON data. 
+
+\section*{Adding explanatory variables to your match data}
+The required information for a match is the date, home team, home score, away team and away score.  These must have the  column names \verb@date@, \verb@home.team@, \verb@home.score@, \verb@away.team@ and \verb@away.score@ in the files output by the scrapers.
+
+Often you will want to add other information about a match because you want to be able to filter later on that information (e.g. you want to only show teams that played in a certain tournament) or you want to use that information in your model.
+For the latter, note that there are two scores for a match, the home score and the away score.  Some information might affect both teams regardless of whether they are home or away.  For example, the surface (Turf/Grass) and format (9v9, 11v11) affect both teams.  Other information is home or away team specific.  For example, home advantage is team specific.  The home team has advantage "home" while the away has advantage "away" (or "none" or whatever you want to call it).  On neutral territory, the home and away teams would have both "neutral" advantage.   Similarly, distance travelled to the match is team specific; the home and away teams will not travel the same distance in general.
+
+To add information that applies to both teams, you add a column to the match file with the column name being something descriptive, like "surface", "format", "temperature".  To add information that is team specific, add "home." and "away." to the name of the information.  For example, "home.adv" and "away.adv" or "home.dist" and "away.dist".  These must come in a "home." and "away." pair.
+
+Once the match data has a column for the explanatory variables, you will be able to use that when you specify your model in the function \verb@rank.teams@.  To add the extra information to the match files, all the scrapers allow you to pass in extra variables.  These are used to make the extra columns.  The code below shows examples.
+
+
+\section*{Scraping League Data}
+
+\subsection*{Demosphere}
+
+\href{http://www.demosphere.com/}{Demosphere} provides a platform that is easy to scrape and is consistent across different leagues and tournaments.  In addition, Demophere has a team number that can be inferred from the links and is often used across leagues, cups and years within a particular soccer association.  That can be very helpful for figuring out what team is playing.  The team name often varies cyptically between leagues, tournaments and cups so being able to determine the team number is helpful.  Note the number only applies to a specific Demophere platform, e.g. teams in the Oregon Premier League have one number and would have a different one if they played in the Washington Cup, hosted by the Puget Sound Premier League, even though both organizations use Demosphere.
+
+The function \verb@scrape.demosphere@ will scrape a Demosphere page with the schedule and write the data to a comma-delimited file (.csv) with columns date, home.team, home.score, away.team and away.score. The required arguments are the url and file.  \verb@url@ is what to scrape and \verb@file@ is the name of the .csv file.  If \verb@get.surface=TRUE@, the surface information will also be scraped and added as a column named \verb@surface@.  You can pass in \verb@date.format@ to set the format of the dates in the date column.  The default is 2012-12-31 style.  
+
+In the examples below, I will add columns \verb@venue@, \verb@surface@, \verb@home.adv@ and \verb@away.adv@ to the match files.   \verb@venue@ specifies where the match was played.   If you are scraping multiple leagues, you will want a column like this that specifies the league.  You can call the column whatever you want.  I use
+\verb@venue@ because I also will have tournament data and I put the tournament name in the \verb@venue@ column.  It is wise to use a unique name for the league or venue.  For example "RCL D1" is not unique because there is a "RCL D1" league at muliple ages and different seasons.  "Fall RCL D1 U11" or "Fall'12 RCL D1 U11" would be unique.  If you don't do this, you will run into non-unique league names when you get to new seasons or try to compare multiple ages.   Here I use "RCL D1" but in my real database, I use unique identifiers.   \verb@home.adv@ and \verb@away.adv@ specify the advantage.  For league games, I use "home" for the home team and "away" for the away team.  For tournaments, I use "neutral" for both teams.
+
+When adapting this code, it is important that the url points to an analagous webpage.  Go to the url and look at the format and then find the analogous page for your league.  Here I show how to update the WSPL that has 1 page for the whole schedule and the Classic league that has a page for each month.
+
+\begin{lstlisting}
+# Update PSPL WSPL; tag will be the filename
+url = "http://www.pugetsoundpremierleague.com/schedules/Fall2012/48042146.html"
+tag="PSPL WSPL"
+file=tag
+scrape.demosphere(url, file=file, venue=tag, get.surface=TRUE, home.adv="home", away.adv="away")
+
+# Update PSPL Classic; there's a different page for each month
+# So I use append=TRUE for the subsequent months to indicate that data should be appended
+tag="PSPL Classic"
+file=tag
+url = "http://www.pugetsoundpremierleague.com/schedules/Fall2012/48051962.20129.html"
+scrape.demosphere(url, file=file, venue=tag, get.surface=TRUE, home.adv="home", away.adv="away")
+url = "http://www.pugetsoundpremierleague.com/schedules/Fall2012/48051962.201210.html"
+scrape.demosphere(url, file=file, venue=tag, append=TRUE, get.surface=TRUE, home.adv="home", away.adv="away")
+url = "http://www.pugetsoundpremierleague.com/schedules/Fall2012/48051962.201211.html"
+scrape.demosphere(url, file=file, venue=tag, append=TRUE, get.surface=TRUE, home.adv="home", away.adv="away")
+url = "http://www.pugetsoundpremierleague.com/schedules/Fall2012/48051962.201212.html"
+scrape.demosphere(url, file=file, venue=tag, append=TRUE, get.surface=TRUE, home.adv="home", away.adv="away")
+\end{lstlisting}
+
+The Oregon Premier League is scraped in the same way.  Here I show how to scrape the NPL which has a page for each month and the division 4 league which has the whole schedule on one page.
+\begin{lstlisting}
+# Update OPL NPL
+# Again schedules for each month appear on different pages.
+tag="OPL NPL"
+file=tag
+url = "http://www.oregonpremierleague.com/schedules/Fall2012/47896544.20129.html"
+scrape.demosphere(url, file=file, venue=tag, get.surface=TRUE, home.adv="home", away.adv="away")
+url = "http://www.oregonpremierleague.com/schedules/Fall2012/47896544.201210.html"
+scrape.demosphere(url, file=file, venue=tag, append=TRUE, get.surface=TRUE, home.adv="home", away.adv="away")
+url = "http://www.oregonpremierleague.com/schedules/Fall2012/47896544.201211.html"
+scrape.demosphere(url, file=file, venue=tag, append=TRUE, get.surface=TRUE, home.adv="home", away.adv="away")
+
+# Update OPL fourth division
+tag="OPL 4th Div"
+file=tag
+url = "http://www.oregonpremierleague.com/schedules/Fall2012/51445522.html"
+scrape.demosphere(url, file=file, venue=tag, get.surface=TRUE, home.adv="home", away.adv="away")
+\end{lstlisting}
+
+Now we have a series of .csv files for these PSPL and OPL leagues.  I put my match data in separate .csv files as I find it easier to find match data when I need to error check later, but you can just have one file name and append everything to that.
+
+\subsection*{Korrio}
+
+\href{http://www.korrio.com/}{Korrio} is another content provider for soccer leagues and tournaments.  It is a bit less standard than Demosphere and the scraper may need tweaking to work for other tournaments and leagues.  The function is \verb@scrape.korrio@ and the arguments are the same as for \verb@scrape.demosphere@.
+
+Here I show how to scrape the RCL division 1 league.  The division 2 to 4 leagues are the same; just a different url.
+\begin{lstlisting}
+# Update RCL D1
+tag="RCL D1"
+file=tag
+url="https://korrio.com/groups/division-1-2136679329/schedule"
+scrape.korrio(url, file=file, venue=tag, get.surface=TRUE, home.adv="home", away.adv="away")
+\end{lstlisting}
+
+\subsection*{Affinity Sports}
+
+\href{http://www.affinity-sports.com/}{Affinity Sports} is a commonly used content provider for USYSA soccer leagues and cups.  This is a content provider that has different page designs for different leagues and tournaments.  The argument \verb@col.num@ is the number of columns in the schedule table, and is used to try to determine which format is used.  Look at the website and count all the columns. This scraper is unlikely to be stable across Affinity Sport sites, but give it a try.  Just be ready to adapt the scraper code as needed.  The function is \verb@scrape.sportaffinity@.  Affinity Sport sites do not typically have surface information for the fields, so I add \verb@surface="Unk"@ for unknown surface.
+
+Here's how to scrape the Portland Metro League Red division.
+\begin{lstlisting}
+# Update PML
+#Portland Metro League
+url="http://oysa-2012pml.sportsaffinity.com/Tour/public/info/schedule_results2.asp?sessionguid=&flightguid={EB53B0A5-1309-4884-9A96-BE0CD7C1307C}&tournamentguid=DD593D51-4F66-4C23-9784-F00DCD2FBC91"
+tag="PML Blue"
+file=tag
+scrape.sportaffinity(url, file=file, venue=tag, col.num=10, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+The surface cannot be scraped.  You'll have to look up the surface and edit the .csv file manually if you want surface information.
+
+\subsection*{GotSport}
+
+\href{http://home.gotsoccer.com/}{GotSport} (or GotSoccer) is another commonly used content provider, especially for tournaments but also some leagues.  Unfortunately, this is a content provider that has different page designs for different leagues and tournaments.  The argument \verb@tb.num@ which table on the page has the match data.  I don't know how to get this by looking at the page.  The \verb@scrape.gotsport@ function will return the list of tables if you use a bad \verb@tb.num@.  You can use this feature to get the list, and then look at the list to find the element with the match table. Here \verb@tb.num=800@ is way too big (it should be 8, 9 or 10), so this is guaranteed to throw and error and return the table list to you
+\begin{lstlisting}
+my.tables=scrape.gotsport(url, file=file, venue=tag, tb.num=800, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+Look at \verb@my.tables@ and find which list element (the number) has the matches.  That should be \verb@tb.num@.
+
+Note GotSport has a super nice feature of a universal team number.  This number is used for any league or tournament the team is in.  There are errors (like teams with multiple numbers) but in general the number is accurate and is very helpful for sorting out what team played in a GotSport tournament (since team name may be ambiguous or unhelpful).
+
+The WA District VI leagues use GotSport.  Here's how to scrape the Umbro league.  The Reebok and Adidas leagues use the same \verb@tb.num@.
+\begin{lstlisting}
+# Update D6 Umbro
+url="http://events.gotsport.com/events/schedule.aspx?EventID=26296&GroupID=235574&Gender=Boys&Age=12"
+tag="D6 Umbro"
+file=tag
+scrape.gotsport(url, file=file, venue=tag, tb.num=8, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+
+\subsection*{Custom1: District III and NPSL}
+
+These leagues use webpages with no dates but rather with week number.  Unfortunately, they also have malformed html tables.  \verb@scrape.custom1@ will scrapes these and the function code will show you some tricks for dealing with malformed html.
+
+Here is the code to scrape the North Puget Sound League (NPSL).  The division 2 page has some games entered with the wrong week.  The code shows how to fix that.
+\begin{lstlisting}
+# You need to tell the code the dates for the week numbers.
+weeks=c("2012-9-8","2012-9-15","2012-9-22","2012-9-29",
+"2012-10-6","2012-10-13","2012-10-20","2012-10-27",
+"2012-11-3","2012-11-10","2012-11-17","2012-12-1",
+"2012-12-8","2012-12-15")
+
+# Update NPSL D1
+url = "http://www.npsl-league.org/npsl/scorekeeping/score_report.php?report_id=B12D1"
+tag="NPSL D1"
+file=tag
+scrape.custom1(url,weeks=weeks, file=file, venue=tag, first.td.tag=4, home.adv="home", away.adv="away", surface="Unk")
+
+# Update NPSL D2
+url = "http://www.npsl-league.org/npsl/scorekeeping/score_report.php?report_id=B12D2"
+tag="NPSL D2"
+file=tag
+scrape.custom1(url,weeks=weeks, file=file, venue=tag, first.td.tag=4, home.adv="home", away.adv="away", surface="Unk")
+#fix games that listed with wrong week
+filename=paste(file,".csv",sep="")
+scores=read.csv(file=filename, colClasses=c("character"),strip.white=TRUE)
+scores$date[scores$date=="2012-12-8" & scores$home.team=="NSC Impact 00"]="2012-11-4"
+scores$date[scores$date=="2012-12-15" & scores$away.team=="NSC Impact 00"]="2012-11-24"
+write.table(scores, file=filename,row.names=FALSE,col.names=TRUE,append=FALSE,sep=",",qmethod="double")
+\end{lstlisting}
+
+District III uses the same webpage format.  This league does not show the actual match scores.  It caps the GD at 5.  This will mess up the relative ranking of District III teams, so we need to fix it if possible.  Here I went to the referee website and looked up the actual scores and fixed those manually.  This occurred only in the Gold level.
+
+\begin{lstlisting}
+# Update D3 Gold
+tag="D3 Gold"
+file=tag
+url <- "http://www.district-3.org/season_2012/scorekeeping/score_report.php?report_id=B12G" 
+scrape.custom1(url, weeks=weeks, file=file, venue=tag, home.adv="home", away.adv="away", surface="Unk")
+# Manually correct the underreported scores on D3 website; go here http://www.pcsra.org/inquiry.php
+filename=paste(file,".csv",sep="")
+scores=read.csv(file=filename, colClasses=c("character"),strip.white=TRUE)
+scores$home.score[scores$date=="9/15/2012" & scores$home.team=="Colibri-Rene"]="9"
+scores$home.score[scores$date=="9/22/2012" & scores$home.team=="Colibri-Rene"]="12"
+scores$home.score[scores$date=="10/6/2012" & scores$home.team=="Colibri-Rene"]="10"
+scores$home.score[scores$date=="10/13/2012" & scores$home.team=="Colibri-Rene"]="7"
+scores$home.score[scores$date=="10/20/2012" & scores$home.team=="Colibri-Rene"]="12"
+scores$home.score[scores$date=="9/22/2012" & scores$away.team=="Nortac Cosmos"]="6"
+scores$home.score[scores$date=="10/6/2012" & scores$home.team=="SHSC Strikers"]="7"
+write.table(scores, file=filename,row.names=FALSE,col.names=TRUE,append=FALSE,sep=",",qmethod="double")
+
+# Update D3 Silver 1
+url = "http://www.district-3.org/season_2012/scorekeeping/score_report.php?report_id=B12S1" 
+tag="D3 S1"
+file=tag
+scrape.custom1(url, weeks=weeks, file=file, venue=tag, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+
+\subsection*{JSON}
+
+The British Columbia Soccer Premier League (BCSPL) is an example of a league that uses Javascript to display match results and getting that dynamically produced html is hard (at least I was not able to figure out how to get it).  But we can easily scrape the JSON from the BCSPL website.  Unfortunately finding the url to the JSON is not so easy.  See the url below and try to find the analagous one.
+
+\begin{lstlisting}
+# Update BCSPL; finding the correct url is not easy; the # after /leagues/ is the important part
+url="http://www.bcsoccerpremierleague.net/leagues/3483/events.json?calendar=true&amp;season_id=40085"
+tag="BCSPL"
+file=tag
+scrape.json1(url, file=file, venue=tag, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+
+\section*{Scraping Tournament Data}
+
+Here I show a series of Pacific NW tournaments and the code I used to scrape them.  In this example, I will append all the tournament data to one file called "tournaments" (the function will add .csv if you leave it off).  Notice I set \verb@append=TRUE@ to append to the existing file.
+
+The Oswego Nike Cup is an example of a different GotSport format with an unusual date format.  The date format is specified with \verb@date.style@.  It also has a different table style, which I call 2.
+\begin{lstlisting}
+file="tournaments"
+#this one has tb in 11
+url="http://events.gotsport.com/events/schedule.aspx?EventID=24694&GroupID=234874&Gender=Boys&Age=12"
+tb=scrape.gotsport(url, file=file, venue="Oswego Nike Cup Gold", tb.num=11, append=TRUE, home.adv="home", away.adv="away", surface="Unk")
+url="http://events.gotsport.com/events/schedule.aspx?EventID=24694&GroupID=234875&Gender=Boys&Age=12"
+scrape.gotsport(url, file=tourn.file, venue="Oswego Nike Cup Silver", tb.num=11, append=TRUE, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+
+The Crossfire Nike Cup also uses GotSport but a different format and the table with the matches is in a different location.  I set \verb@surface=Grass"@ since all these matches were held on Grass.
+\begin{lstlisting}
+#xfire Nike
+#this one has games in tb 12
+tag="Crossfire Nike Challenge Gold"
+file="tournaments"
+url="http://events.gotsport.com/events/schedule.aspx?EventID=23071&GroupID=232364&Gender=Boys&Age=13"
+scrape.gotsport(url,file=file, venue=tag, append=TRUE, tb.num=12, date.format="%m/%d/%Y", home.adv="neutral", away.adv="neutral", surface="Grass")
+\end{lstlisting}
+
+The Northwest Cup also uses GotSport but the table we need in number 10 not 12.
+\begin{lstlisting}
+#Northwest Cup
+url="http://events.gotsport.com/events/schedule.aspx?EventID=25578&GroupID=241973&Gender=Boys&Age=12"
+tb=scrape.gotsport(url, file=file,venue="Northwest Cup Gold", tb.num=10, append=TRUE, home.adv="home", away.adv="away", surface="Unk")
+\end{lstlisting}
+
+
+The NW Champions League, Chinook Cup, Sagebrush Cup, River Jam and Rainier Challenge all use Demosphere.
+\begin{lstlisting}
+# NWCL
+url="http://www.northwestchampions.com/schedules/2012/48003952.html"
+tag="NWCL"
+file="tournaments"
+scrape.demosphere(url, file=file, venue=tag, get.surface=TRUE, append=TRUE, home.adv="neutral", away.adv="neutral")
+
+#Chinook Cup Gold
+file="tournaments"
+url="http://southsidesoccer.org/schedules/2012/46586837.html"
+scrape.demosphere(url, file=file, venue="Chinook Cup Gold", get.surface=TRUE, append=TRUE, home.adv="home", away.adv="away")
+url="http://southsidesoccer.org/schedules/2012/46586838.html"
+scrape.demosphere(url, file=file, venue="Chinook Cup Silver", get.surface=TRUE, append=TRUE, home.adv="home", away.adv="away")
+
+#Sagebrush Classic
+url="http://events.gotsport.com/events/schedule.aspx?EventID=23840&GroupID=228813&Gender=Boys&Age=12"
+tb=scrape.gotsport(url, file=file, venue="Sagebrush Classic", tb.num=11, append=TRUE, home.adv="home", away.adv="away", surface="Unk")
+
+#River Jam
+url="http://www.washingtonpremierfc.com/schedules/2012/47393723.html"
+scrape.demosphere(url, file=file, venue="River Jam", get.surface=TRUE, append=TRUE, home.adv="home", away.adv="away")
+
+#Rainer Challenge
+url="http://www.washingtonpremierfc.com/schedules/2012/45274431.html"
+scrape.demosphere(url, file=file, venue="Rainer Challenge Samba", get.surface=TRUE, append=TRUE, home.adv="home", away.adv="away")
+url="http://www.washingtonpremierfc.com/schedules/2012/45274432.html"
+scrape.demosphere(url, file=file, venue="Rainer Challenge Copa", get.surface=TRUE, append=TRUE, home.adv="home", away.adv="away")
+\end{lstlisting}
+
+
+<<Reset, echo=FALSE>>=
+options(prompt="> ", continue="+ ")
+@
+\end{document}

@@ -1,0 +1,35 @@
+
+## export functions
+export(
+  scrape.sportaffinity,
+  scrape.sportaffinity.brackets,
+  scrape.scoreboard,
+  scrape.demosphere,
+  scrape.korrio,
+  scrape.gotsport,
+  scrape.custom1,
+  scrape.custom2,
+  scrape.custom3,
+  scrape.custom4,
+  scrape.json1,
+  scrape.usclub,
+  construct.team.file,
+  create.fbRanks.dataframes,
+  edit_team_data,
+  rank.teams,
+  predict.fbRanks,
+  simulate.fbRanks,
+  residuals.fbRanks,
+  print.fbRanks,
+  plot.fbRanks
+)
+
+## register S3 methods
+S3method(print, fbRanks)
+S3method(plot, fbRanks)
+S3method(predict, fbRanks)
+S3method(simulate, fbRanks)
+S3method(residuals, fbRanks)
+
+## Imports
+importFrom(stats, simulate)

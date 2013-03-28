@@ -1,0 +1,145 @@
+%\VignetteIndexEntry{Basic Team Ranking}
+%\VignettePackage{fbRanks}
+\documentclass[12pt]{article}
+\usepackage[landscape]{geometry}
+\usepackage{hyperref}
+\usepackage{Sweave}
+\usepackage{listings}
+
+\title{Doing a basic team ranking using match data}
+\author{}
+\begin{document}
+\maketitle
+\SweaveOpts{concordance=TRUE}
+<<RUNFIRST, echo=FALSE>>=
+options(prompt=" ", continue=" ", width=100)
+library(fbRanks)
+@
+This shows how to use a comma-delimited file of match data to get a team ranking and then to predict tournaments.  The example uses match and team data downloaded from \href{http://www.lastplanetranking.blogspot.com/}{www.lastplanetranking.blogspot.com}.
+
+\section{Load the data}
+The ranking function needs a dataframe.  To get one, we will use the \verb@create.fbRanks.dataframes()@ function which reads in a comma-delimited match file, does error checking and creates a dataframe.  But you can create a dataframe any way you want. 
+
+<<load-data, keep.source=TRUE>>=
+temp=create.fbRanks.dataframes(scores.file="scores-web.csv")
+scores=temp$scores
+@
+
+In the example scores file, each team has a unique name thus a "team resolver" file is not needed.  A "team resolver" file is needed when our match data has one team using different names, which will happen if you have data from different tournaments and leagues.  The example scores file already has the names standardized for you.
+
+<<show-data>>=
+head(scores)
+@
+
+\section{Rank the teams}
+To do just a basic ranking, the \verb@rank.teams()@ function requires a dataframe with date, home.team, home.score, away.team, and away.score columns that are respectively class date, character, numeric, character, and numeric.
+
+<<rank-teams, keep.source=TRUE, results=hide, eval=FALSE>>=
+#get the ranks without any explantory variables
+ranks1=rank.teams(scores=scores)
+@
+
+We can print the ranks.  The output is not shown since there are 200+ teams.
+<<print-ranks, keep.source=TRUE, eval=FALSE>>=
+#print all ranks
+print(ranks1)
+@
+
+The problem with not using a team file is that we have no information on the teams, like the region or the age.  Let's add a team file which has the region for each team.  Again this is a file downloaded from \href{http://www.lastplanetranking.blogspot.com/}{www.lastplanetranking.blogspot.com}.  The file has a variety of information about the teams.
+
+
+<<load-teams, keep.source=TRUE>>=
+temp=create.fbRanks.dataframes(scores.file="scores-web.csv", teams.file="teams-web.csv")
+scores=temp$scores
+teams=temp$teams
+head(teams[,c("name","age","region","fall.league")])
+@
+
+We can fit again, this time with a team resolver file:
+<<rank-teams2, keep.source=TRUE,results=hide>>=
+#get the ranks without any explantory variables
+ranks2=rank.teams(scores=scores, teams=teams)
+@
+
+Now we can print using the columns in the teams dataframe.  Show the ranks for teams in the fall RCL Division 1 U12 league.
+<<print-ranks2, keep.source=TRUE>>=nks :
+print(ranks2, fall.league="RCL D1 U12")
+@
+By default it is scaling the total column by the median total for all teams in the database (not just in RCL D1 U12).  What you scale to does not really matter.  It is the difference in total strength (difference in the values in the total columns of two teams) that tells you the relative strength.  The meaning of the total column is that $2^\textrm{diff}$, where diff=(total strength team A - total strength team B), is the expected number of goals by team A divided the expect number of goals by team B in a match up between these two teams.  So if the difference in total strength is 1 goal, then team A scores twice as many goals as team B, so for every 2 goals scored by team A, team B scores (on average) 1 when team A plays team B.  If the difference is 2, team A scores $2^2=4$ times as many goals.  The scaling constant $c$, which is (total + $c$), falls out when you take the difference in total strength between teams so only matters from a presentation perspective.
+
+\section{Ranking with explanatory variables}
+If we want to include explanatory variables in our model, then our scores dataframe also needs columns for the game-specific explanatory variables. In this example, I added surface to the scores dataframe to specify whether the game was played on turf, grass or unknown.  The explanatory variables are specified in the \verb@rank.teams@ call using \verb@add=@.  To include the surface information in our model, add \verb@add="surface"@ to the \verb@rank.teams@ call.
+<<rank-teams3, keep.source=TRUE,eval=FALSE>>=
+#get the ranks with surface effect; note surface must be a column 
+#in scores (or teams) dataframe for this to work
+ranks3=rank.teams(scores=scores,teams=teams,add="surface")
+@
+Note, the explanatory variables should be specified as character or numeric values and not as factors.
+
+Explanatory variables that affect the home team score differently than the away team score must be specified with two columns in the scores dataframe.  One is called "home.xyz" and the other is "away.xyz".  For example, if you wanted to look at the effect of the goalkeeper jersey color on scores (which interestingly has been shown to affect the goals scored against), you could have a column called "home.GKcolor" and "away.GKcolor".  Or if you wanted to look at whether the distance teams much travel affects the scores, you could have a column called "home.traveldist" and "away.traveldist".  However, the most common home/away explanatory variable is simply whether the team is home or away.  In the scores dataframe, I use columns "home.adv" and "away.adv" to specify the advantage the team has, which will be either "home", "away" or "neutral".
+
+To add an explanatory variable that affects the home and away teams differently, add only the part after "home." and "away." to the \verb@add=@ vector in the \verb@rank.teams@ call.  Here's how to add surface and advantage to the B00 ranks:
+<<rank-teams4, keep.source=TRUE,results=hide>>=
+ranks4=rank.teams(scores=scores,teams=teams,add=c("surface","adv"))
+@
+
+Slightly fewer goals per game are scored on turf,
+<<coef.turf>>=
+coef(ranks4$fit$cluster.1)["surface.fTurf"]
+@
+and the home team has an advantage, in this case small.
+<<coef.home>>=
+coef(ranks4$fit$cluster.1)["adv.fhome"]
+@
+
+What is the \verb@cluster.1@ bit? Clusters are the groups of teams that are completely connected (there is a path from every team to every other team).  You can have multiple clusters in your dataset and \verb@rank.teams@ will rank each separately but you will not be able to compare ranks across clusters.  The fits are named cluster.1, cluster.2, etc.  In this example, we have only one cluster since all the teams in this scores dataframe are interconnected.
+
+\section{Predicting and simulating matches}
+We can easily predict matches and tournaments.  First let's fit a model using just the summer data.
+<<rank-summer, keep.source=TRUE, results=hide>>=
+#Drop the home/away advantage since all the summer games are neutral
+#Add max.date so tell the function to only use matches up to max.date
+ranks.summer=rank.teams(scores=scores,teams=teams,add=c("surface"), max.date="2012-9-5")
+@
+
+Now we can use that model to simulate the outcome of the RCL D1 fall league:
+<<simulate>>=
+simulate(ranks.summer, venue="RCL D1")
+@
+
+We can also predict the match outcomes for RCL D1 games on the 16th of September.  Note the format for a date and that it is wrapped in \verb@as.Date()@.
+<<predict>>=
+predict(ranks.summer, venue="RCL D1", date=as.Date("2012-09-16"))
+@
+
+We can construct "fantasy" tournaments by making a dataframe with NaN for the score.  The columns date, home.team, home.score, away.team, away.score must be present.  The date column must be there but will be ignored.  Also, any explanatory variables must be present.
+
+Let's have a fantasy tournament of the three all-city teams in the Seattle United Club and the top Seattle United regional team.
+<<fantasy-tournament>>=
+fantasy.teams=c("Seattle United Copa B00","Seattle United Tango B00",
+                "Seattle United Samba B00","Seattle United S Black B00")
+home.team=combn(fantasy.teams,2)[1,]
+away.team=combn(fantasy.teams,2)[2,]
+fantasy.games=data.frame(
+  date="2013-1-1", 
+  home.team=home.team, 
+  home.score=NaN, 
+  away.team=away.team,
+  away.score=NaN, surface="Grass", 
+  home.adv="neutral", away.adv="neutral")
+@
+
+\verb@fantasy.games@ is now a dataframe with an imaginary bracket with 4 teams and each team playing 3 games.  Our imaginary tournament is on grass.
+
+<<simulate-fantasy>>=
+simulate(ranks4, newdata=fantasy.games, points.rule="tournament10pt")
+@
+
+\section{Multiple clusters of teams}
+If you do not have a path from every team to every other team in your database, then you will have some groups of teams that are in different 'clusters'. Let's say you have six teams.  A played B, B played C, C played D, and E played F.  There is a 'path' from A to D (through the B-C and C-D games) but no path from E or F to A, B, C or D.  So A,B,C,D is one 'cluster' and E,F is another.  We can rank all the teams within a cluster to each other, but we cannot rank one cluster against another.  The fbRanks package will recognize the different clusters and print the ranks separately.  However, the \verb@predict@ and \verb@simulate@ functions expect fbRanks objects (the output from a \verb@rank.teams@ call) with only one cluster.
+
+
+<<Reset, echo=FALSE>>=
+options(prompt="> ", continue="+ ")
+@
+\end{document}
