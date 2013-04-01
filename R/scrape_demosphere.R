@@ -22,7 +22,7 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
   # read the tables and select one labeled tbListGames2
   tables=readHTMLTable(doc)
   # the match info we want is in columns 1,4,5,6
-  my.table=tables$tblListGames2[,c(1,4,5,6)]
+  my.table=tables$tblListGames2[,c(1,4,5,6),drop=FALSE]
   # get rid of rows that are not matches.  Those will have GAME# in column 1
   my.table=my.table[my.table[,1]!="GAME#",]
   my.table[,5]=as.character(NaN)
@@ -44,10 +44,10 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
   }
   if(length(is.date[length(is.date)]:dim(my.table)[1])!=0)
     my.table[is.date[length(is.date)]:dim(my.table)[1],"date"]=my.table[is.date[length(is.date)],"date"]
-  my.table=my.table[-is.date,]
+  my.table=my.table[-is.date,,drop=FALSE]
   
   # Get rid of any rows that are NAs; those were associated with the match date and not a match result
-  my.table=my.table[!is.na(my.table$away.team),]
+  my.table=my.table[!is.na(my.table$away.team),,drop=FALSE]
   
   # Fix the score column
   my.table$home.score=as.character(my.table$home.score)
@@ -115,7 +115,7 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
         fieldtable=fieldtable[[fieldtable.num]]
         #the fieldname and surface are in columns 1 and 4 respectively; first 2 lines are header info
         first.row = which(fieldtable[,1]=="FIELD NAME")
-        fieldtable=fieldtable[first.row:dim(fieldtable)[1],]
+        fieldtable=fieldtable[first.row:dim(fieldtable)[1],,drop=FALSE]
         if(!any(fieldtable[1,]=="SURFACE")) fieldtable=cbind(fieldtable,X=c("SURFACE",rep("Unk",dim(fieldtable)[1]-1)))
         needed.cols=c(which(fieldtable[1,]=="FIELD NAME"),which(fieldtable[1,]=="SURFACE"))
         #remove the header and non-needed columns
@@ -141,7 +141,7 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
   }
   
   #Finally check that no team names==""
-  my.table=my.table[my.table$home.team!="",]
+  my.table=my.table[my.table$home.team!="",,drop=FALSE]
   
   # Save
   if(!append) colsn=TRUE else colsn=FALSE

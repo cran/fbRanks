@@ -22,7 +22,7 @@ tb.num=which(unlist(lapply(tb,function(x){identical(x[1,6],"FIELD")})))
 catb=tb[[tb.num]]
 catb=catb[!is.na(catb[,6]) & !str_detect(catb[,6],"FORFEITED"),c(-2,-3,-6)]
 catb[,1]=sapply(catb[,1],function(x){tmp=str_remove.nonascii(x); str_proper(str_trim(str_remove(tmp,1,3))) })
-catb=catb[-1,]
+catb=catb[-1,,drop=FALSE]
   months = as.numeric(format(as.Date(catb[,1],"%b %d"),"%m"))
   years=rep(year,length(months))
   if(any(diff(months)<0)) years[min(which(diff(months)<0)+1):length(months)]=year+1
@@ -36,7 +36,7 @@ catb$home.score=sapply(catb[,2],function(x){tmp=str_split(x," - ")[[1]]; tmp[len
 catb[,3]=sapply(catb[,3],function(x){tmp=str_remove.nonascii(x); tmp=str_trim(tmp); str_replace(tmp,"\r\n","") })
 catb$away.team=sapply(catb[,3],function(x){tmp=str_split(x," - ")[[1]]; tmp=str_strip.white(tmp[length(tmp)-1]); str_remove(tmp,-2)})
 catb$away.score=sapply(catb[,3],function(x){tmp=str_split(x," - ")[[1]]; tmp[length(tmp)]})
-catb=catb[,c(-1,-2,-3)]
+catb=catb[,c(-1,-2,-3),drop=FALSE]
 
   extra=list(...)
   for(i in names(extra)){

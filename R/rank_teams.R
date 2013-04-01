@@ -85,8 +85,8 @@ if(!ok){
 
 #determine which teams to include based on any filter arguments the user included
 tmp=team.and.score.filters(list(scores=scores, teams=teams),...)
-scores=scores[tmp$include.scores,]
-teams=teams[teams$name %in% tmp$include.teams,]
+scores=scores[tmp$include.scores,,drop=FALSE]
+teams=teams[teams$name %in% tmp$include.teams,,drop=FALSE]
 
 #Check that any names in add.to.formula appears in scores
 if(!is.null(add) & !is.character(add))
@@ -125,8 +125,8 @@ scores.glm$home.team=factor(scores$home.team, levels=level.names)
 scores.glm$away.team=factor(scores$away.team, levels=level.names)   
 
 #subset scores to date range
-scores.glm = scores.glm[scores.glm$date>=min.date,]
-scores.glm = scores.glm[scores.glm$date<=max.date,]
+scores.glm = scores.glm[scores.glm$date>=min.date,,drop=FALSE]
+scores.glm = scores.glm[scores.glm$date<=max.date,,drop=FALSE]
 
 #Set up the factor names for glm
 attack.team=c(as.character(scores.glm$home.team),as.character(scores.glm$away.team))
@@ -155,7 +155,7 @@ date.filter = scores$date>=min.date & scores$date<=max.date
    names.in.clus = clus.names[clus$membership == cluster]
    #el is a 2 column matrix with home.team in col 1 and away.team in col 2
    rows.clus = apply(el,1,tmp.fun,names.in.clus)
-   scores.clus = scores.glm[rows.clus,]
+   scores.clus = scores.glm[rows.clus,,drop=FALSE]
    time.diff=as.numeric(max.date-scores.clus$date)
    time.diff=c(time.diff,time.diff) #since away and home
    attack.team=c(as.character(scores.clus$home.team),as.character(scores.clus$away.team))

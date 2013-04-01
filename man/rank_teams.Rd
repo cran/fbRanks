@@ -1,8 +1,9 @@
 \name{rank.teams}
+\alias{fbRanks}
 \alias{rank.teams}
 \title{ Team Ranks Via Poission Regression }
 \description{
-  Creates ranks using a dataframe of match records.  This, along with \code{\link{print.fbRanks}} and \code{\link{predict.fbRanks}}, are the main functions in the package.
+  Creates ranks using a dataframe of match records.  This, along with \code{\link{print.fbRanks}} and \code{\link{predict.fbRanks}}, are the main functions in the package.  Use \code{vignette("Basic_team_ranking",package="fbRanks")} at the command line to open a vignette that walks through a basic ranking using a data.frame or comma-delimited text file.
 }
 \usage{
 rank.teams(scores=NULL, teams=NULL, 
@@ -50,7 +51,7 @@ Dixon and Coles (1997) Modeling Association Football Scores and Inefficiencies i
   eeholmes(at)u(dot)washington(dot)com
 }
 \seealso{ 
-  \code{\link{print.fbRanks}}  
+  \code{\link{print.fbRanks}}, \code{\link{create.fbRanks.dataframes}}
 }
 \examples{
 #load the example data set

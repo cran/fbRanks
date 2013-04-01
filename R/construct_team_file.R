@@ -88,7 +88,7 @@ team.info[i,3:(length(alt.names[[i]])+2)]=alt.names[[i]]
 }
 
 ix=sort(team.info$name,index.return=TRUE)$ix
-team.info=team.info[ix,]
+team.info=team.info[ix,,drop=FALSE]
 rownames(team.info)=NULL
 team.info$name=paste(team.info$name,add.to.name,sep="")
 team.info$name=str_proper(team.info$name)

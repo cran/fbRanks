@@ -23,7 +23,7 @@ scrape.custom3 = function(url, file="Custom3", year=NULL, date.format="%Y-%m-%d"
   for(i in which(match.tbls)){
     tbl=tb[[i]]
     colnames(tbl)=as.character(tbl[1,])
-    tbl=tbl[-1,]
+    tbl=tbl[-1,,drop=FALSE]
     date=paste(tbl$Date,year)
     date=as.Date(date,"%a %b %d %Y")
     home.team=tbl$Home

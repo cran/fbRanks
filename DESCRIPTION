@@ -1,8 +1,8 @@
 Package: fbRanks
 Type: Package
 Title: Association Football (Soccer) Ranking via Poisson Regression
-Version: 1.0
-Date: 2013-3-28
+Version: 1.1
+Date: 2013-4-1
 Depends: MASS, stats, stringr, igraph
 Suggests: RJSONIO, RCurl, httr, XML, Rlab, xtable, lme4, tcltk
 Author: Eli Holmes
@@ -21,9 +21,10 @@ Description: This package uses time dependent Poisson regression and a
         The package contains functions for predicting and simulating
         tournaments and leagues from estimated models.
 License: GPL-2
+URL: http://www.lastplanetranking.blogspot.com/
 LazyData: yes
 BuildVignettes: yes
-Packaged: 2013-03-28 22:50:02 UTC; eli.holmes
+Packaged: 2013-03-31 15:17:10 UTC; eli.holmes
 NeedsCompilation: no
 Repository: CRAN
-Date/Publication: 2013-03-29 07:59:16
+Date/Publication: 2013-03-31 22:37:35

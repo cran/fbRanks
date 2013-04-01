@@ -45,8 +45,8 @@ for(j in names(extra.scores)){
 }
 
 #Need to get rid of scores data past the fit so that only teams in the appropriate data range appear in include.teams
-scores = scores[scores$date>=x$min.date,]
-scores = scores[scores$date<=x$max.date,]
+scores = scores[scores$date>=x$min.date,,drop=FALSE]
+scores = scores[scores$date<=x$max.date,,drop=FALSE]
 
 #set flag that something is printed
 ok=TRUE
@@ -130,7 +130,7 @@ team.ranks[j]=team.data[[j]][match(team.names,all.team.names)][total$ix]
 }
 
 #only return the teams in the include.teams vector
-team.ranks=team.ranks[team.ranks$team %in% include.teams,]
+team.ranks=team.ranks[team.ranks$team %in% include.teams,,drop=FALSE]
 
  if(dim(team.ranks)[1]>0){ #something to print
    nothing.to.print=FALSE

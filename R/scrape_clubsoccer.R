@@ -18,7 +18,7 @@ tb.end=which(names(tb)=="ctl00_ContentPlaceHolder1_ChangesTable")-1
 game.tbs=tb[seq(tb.start,tb.end,2)]
 for(i in 1:length(game.tbs)){
   this.tb=game.tbs[[i]]
-  this.tb=this.tb[!is.na(this.tb[,"V2"]),]
+  this.tb=this.tb[!is.na(this.tb[,"V2"]),,drop=FALSE]
   the.dates=as.Date(this.tb[seq(1,dim(this.tb)[1],2),"V2"], url.date.format)
   the.dates=format(the.dates, date.format)
   the.home.team=this.tb[seq(1,dim(this.tb)[1],2),"V7"]

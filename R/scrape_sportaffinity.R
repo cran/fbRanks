@@ -45,7 +45,7 @@ for(i in 1:length(games)){
   away.score=sapply(away.score,function(x){paste(str_extract_all(x,"[0-9]")[[1]],collapse="")})
   tmp.table=data.frame(date=my.dates[i],home.team=tmp.games[,1],home.score=home.score,away.team=tmp.games[,3],away.score=away.score, stringsAsFactors=FALSE)
   bad.game=str_detect(tmp.games[,1],"Forfeited Game") | str_detect(tmp.games[,3],"Forfeited Game")
-  tmp.table=tmp.table[!bad.game,]
+  tmp.table=tmp.table[!bad.game,,drop=FALSE]
   my.table=rbind(my.table,tmp.table)
 }
 

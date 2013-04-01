@@ -17,7 +17,7 @@ scrape.scoreboard=function(html.file, file="ScoreBoard", url.date.format="%a %m/
     surf=rep("Unk",dim(tmp)[1])
     surf[str_detect(tmp$Venue,"Turf")]="Turf"
     surf[str_detect(tmp$Venue,"Grass")]="Grass"
-    tmp=tmp[,c("Date","Home Team","Score","AwayTeam")]
+    tmp=tmp[,c("Date","Home Team","Score","AwayTeam"),drop=FALSE]
     tmp[,5]=unlist(lapply(str_split(tmp$Score,"-"),function(x){x[2]}))
     tmp[,3]=unlist(lapply(str_split(tmp$Score,"-"),function(x){x[1]}))
     surface=c(surface,surf)

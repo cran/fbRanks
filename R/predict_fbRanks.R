@@ -38,12 +38,12 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
 
     #determine which teams to include based on any filter arguments the user included
     include.scores=team.and.score.filters(list(scores=scores, teams=x$teams),...)$include.scores
-    scores=scores[include.scores,]
+    scores=scores[include.scores,,drop=FALSE]
     
     #filter on the date range
     #scores date is already a date class
-    scores = scores[scores$date>=min.date,]
-    scores = scores[scores$date<=max.date,]
+    scores = scores[scores$date>=min.date,,drop=FALSE]
+    scores = scores[scores$date<=max.date,,drop=FALSE]
   }
   
   if(dim(scores)[1]==0) stop("No matches to predict. Either you didn't specify home and away teams or the scores database \n  in your fbRanks object has no matches for your specified dates and filter values.")
@@ -61,7 +61,7 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
     names.in.clus = clusters$names[clusters$membership == clus]
     rows.clus = apply(el,1,tmp.fun,names.in.clus)
     if(!any(rows.clus)) next
-    scores.clus = scores[rows.clus,]
+    scores.clus = scores[rows.clus,,drop=FALSE]
     
     #predictor variables other than required
     #How names work; in fitted object predictors (except attack and defend) have the name xyz.f

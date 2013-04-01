@@ -32,14 +32,14 @@ if(dim(tb[[tb.num]])[2]!=8){
   cat(paste(file,": The selected tb.num=",tb.num,"does not look right.  It should have 8 columns.\nPass in a different table number (try 10,11 or 12).\nThe list of tables is being sent to the output.\nIf the game table has 5 columns and no header, try table.style=2.\n"))
   return(tb)
 }
-my.table=tb[[tb.num]][,c(-2,-7,-8)]
+my.table=tb[[tb.num]][,c(-2,-7,-8),drop=FALSE]
 }
 if(table.style==2){
   if(dim(tb[[tb.num]])[2]!=5){
     cat(paste("The selected tb.num=",tb.num,"does not look right.  It should have 5 columns and no header.\nPass in a different table number (try 12 or 10).\nThe list of tables is being sent to the output.\nIf the game table has 8 columns and header, try table.style=1."))
     return(tb)
   }
-  my.table=tb[[tb.num]][,c(-3)]
+  my.table=tb[[tb.num]][,c(-3),drop=FALSE]
   my.table=cbind(my.table[,1],my.table) #add date column since it is missing
 }
 # Fix the date column
@@ -62,8 +62,8 @@ for(i in 1:length(is.date)){ #for all date rows
 colnames(my.table)=c("date","home.team","home.score", "away.team", "away.score")
 
 #Clean up NAs
-my.table=my.table[!is.na(my.table$away.score),]
-my.table=my.table[!(my.table$home.team=="Home Team"),]
+my.table=my.table[!is.na(my.table$away.score),,drop=FALSE]
+my.table=my.table[!(my.table$home.team=="Home Team"),,drop=FALSE]
 
 #Replace missing scores with NaN
 my.table$home.score[my.table$home.score==""]=NaN

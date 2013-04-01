@@ -76,12 +76,12 @@ if(is.list(points.rule)){
 
     #determine which teams to include based on any filter arguments the user included
     include.scores=team.and.score.filters(list(scores=scores, teams=x$teams),...)$include.scores
-    scores=scores[include.scores,]
+    scores=scores[include.scores,,drop=FALSE]
     
     #filter on the date range
     #scores date is already a date class
-    scores = scores[scores$date>=min.date,]
-    scores = scores[scores$date<=max.date,]
+    scores = scores[scores$date>=min.date,,drop=FALSE]
+    scores = scores[scores$date<=max.date,,drop=FALSE]
   }
   
   if(!missing(groups.column)){
@@ -104,7 +104,7 @@ all.standings=list()
 
 for(gval in glevels){
   bscores=scores
-  if(!identical(glevels,0)) bscores=scores[scores[groups.column]==gval,]
+  if(!identical(glevels,0)) bscores=scores[scores[groups.column]==gval,,drop=FALSE]
   #Predict using the Founders bracket info
   pout=predict(fbRanks,newdata=bscores,silent=TRUE,n=nsim)
   #team names for this bracket

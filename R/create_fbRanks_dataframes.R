@@ -32,14 +32,14 @@ create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=N
         }else{ scores.warning[[ffile]][["other.names.not.in.f.file"]]=new.s.names }
       }
       if(any(next.f$home.team=="NA" | next.f$away.team=="NA")){
-        next.f=next.f[!(next.f$home.team=="NA" | next.f$away.team=="NA"),]
+        next.f=next.f[!(next.f$home.team=="NA" | next.f$away.team=="NA"),,drop=FALSE]
         if(length(scores.warning[[ffile]])==0){
           scores.warning[[ffile]]=list(NA.in.f.file=TRUE)
         }else{ scores.warning[[ffile]][["NA.in.f.file"]]=TRUE }
       }
       bad.team.names=str_detect(next.f$home.team, "Place Flight") | str_detect(next.f$away.team, "Place Flight")
       if(any(bad.team.names)){
-        next.f=next.f[!bad.team.names,]
+        next.f=next.f[!bad.team.names,,drop=FALSE]
         if(length(scores.warning[[ffile]])==0){
           scores.warning[[ffile]]=list(non.team.name.in.f.file=TRUE)
         }else{ scores.warning[[ffile]][["non.team.name.in.f.file"]]=TRUE }
@@ -81,7 +81,7 @@ create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=N
   scores$date=as.Date(scores$date, date.format)
   
   #reorder in increasing date
-  scores=scores[order(scores$date),]
+  scores=scores[order(scores$date),,drop=FALSE]
   
   #convert score to numbers
   scores$home.score=as.numeric(scores$home.score)

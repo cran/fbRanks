@@ -312,8 +312,8 @@ team.name.select <- function(newname=NULL, team.resolver, team.data, scores, typ
   if(return.stuff==TRUE){
     if(which.newname>n.newnames){ skipped.teams=c()
     }else{ skipped.teams=newname[which.newname:n.newnames] }
-    team.res=team.res[sort(team.res$name, index.return=TRUE)$ix,]
-    team.dat=team.dat[sort(team.dat$name, index.return=TRUE)$ix,]
+    team.res=team.res[sort(team.res$name, index.return=TRUE)$ix,,drop=FALSE]
+    team.dat=team.dat[sort(team.dat$name, index.return=TRUE)$ix,,drop=FALSE]
     return(list(team.resolver=team.res, team.data=team.dat, skipped.teams=skipped.teams, updated=TRUE)) #updated team resolver
   }
   if(return.stuff==FALSE) 

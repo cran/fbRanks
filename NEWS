@@ -1,3 +1,9 @@
-footballRanking 1.0 (09-28-2012)
+fbRanks 1.1 (4-1-2013)
+------------------------------------
+- Fixed bug that caused printing to fail if no team dataframe passed into rank.teams()
+- Fixed Basic_team_ranking vignette so user can copy and paste commands into their command line and it will work.
+- Edited the rank.teams.Rd man file to direct users to the Basic_team_ranking vignette.
+
+fbRanks 1.0 (3-28-2013)
 ------------------------------------
 - Released

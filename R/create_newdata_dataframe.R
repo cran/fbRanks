@@ -18,14 +18,14 @@ create.newdata.dataframe=function(x, newdata, min.date, max.date, ...){
            
     #determine which teams to include based on any filter arguments the user included
     include.scores=team.and.score.filters(list(scores=scores, teams=x$teams),...)$include.scores
-    scores=scores[include.scores,]
+    scores=scores[include.scores,,drop=FALSE]
     
     #Fix the date
     if(!all(is.na(scores$date))){
       scores$date=as.Date(scores$date, x$date.format) 
       if(any(is.na(scores$date))) stop(paste("scores dates must be entered in the following format:",format(Sys.Date(),x$date.format),"\n"))
-      scores = scores[scores$date>=min.date,]
-      scores = scores[scores$date<=max.date,]
+      scores = scores[scores$date>=min.date,,drop=FALSE]
+      scores = scores[scores$date<=max.date,,drop=FALSE]
     }
     return(scores)
   }
