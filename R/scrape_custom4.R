@@ -5,7 +5,6 @@
 ################################################################
 scrape.custom4 = function(url, file="Custom4", year=NULL, date.format="%Y-%m-%d", append=FALSE, ...){
   require(XML)
-  require(stringr)
 
   if(missing(year)) stop("Need to know the year that the league started.\n",call.=FALSE)
 

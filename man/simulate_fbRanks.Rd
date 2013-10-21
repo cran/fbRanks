@@ -7,7 +7,12 @@
   on different points rules.
 }
 \usage{
-\method{simulate}{fbRanks}(object, nsim=100000, seed=NULL, ..., newdata=list(home.team="foo", away.team="bar"),
+\method{simulate}{fbRanks}(
+         object, 
+         nsim=100000, 
+         seed=NULL, ..., 
+         newdata=list(home.team="foo", away.team="bar"),
+         bracket.names=NULL,
          max.date="2100-6-1", min.date="1900-5-1", silent=FALSE,
          points.rule="tournament 10pt",tie.rule=list(tie.rule.gd.max=10),
          non.equal.games.rule=list(n.games=3,rule="proportional"),
@@ -18,6 +23,7 @@
   \item{...}{ Other arguments for to use for filtering the scores data.frame or newdata data.frame. See examples.}
   \item{newdata}{ An (optional) data.frame of data to use for predicting.  At the minimum home.team, away.team and any predictors in x (the fbRanks model) are required. You can also pass in arguments to specify that newdata
   be constructed from the scores data.frame in the fbRanks object. See examples.}
+  \item{bracket.names}{An optional list with the team in each bracket.  If not used, all teams are assumed to be in the same bracket unless groups.column is passed in.  In that case, groups.column is used to set the brackets.  See examples.}
   \item{max.date, min.date}{ Used for filtering the scores data.frame or newdata data.frame.}
   \item{silent}{ whether to print anything }
   \item{ nsim }{ the number of simulations. }

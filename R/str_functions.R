@@ -1,4 +1,4 @@
-str_remove.nonascii=function(string,sub=NULL){
+str_remove.nonascii.2=function(string,sub=NULL){
   #sub is what to replace the non-ascii character with
   x=string
   asc <- iconv(x, "latin1", "ASCII")
@@ -18,14 +18,29 @@ str_remove.nonascii=function(string,sub=NULL){
   } 
   x
 }
-  
+
+str_remove.nonascii=function(string,sub=""){
+  #sub is what to replace the non-ascii character with
+  x=string
+  asc <- iconv(x, "latin1", "ASCII")
+  ind <- is.na(asc) | asc != x
+  for(x.i in 1:length(x)){
+    if(ind[x.i]){ x[x.i]=iconv( x[x.i], "latin1", "ASCII", sub = sub ) }
+  } 
+  x
+}
+
 str_remove=function(string, start = 1L, end = -1L, sub=""){
     rep.char=c("&","@","#","~","%") #surely one of these will be missing
     for(i in rep.char){
       if(all(!str_detect(string, i))){ repc=i; break }
     }
+    if(length(string)!=1){
+      start = rep(start,length.out=length(string))
+      end = rep(end,length.out=length(string))
+    }
     for(i in 1:length(start)){
-    str_sub(string, start[i], end[i]) = paste(rep(repc,end[i]-start[i]+1),collapse="")
+    str_sub(string[i], start[i], end[i]) = paste(rep(repc,end[i]-start[i]+1),collapse="")
     }
     str_replace_all(string,repc,sub)
   }
@@ -40,10 +55,10 @@ str_proper=function(string) {
   string
 }
 
-str_strip.white=function(string) 
+str_strip.white=function(string, sub=" ") 
 {
   pattern <- "^\\s+|\\s+$"
   string <- str_replace_all(string, pattern, "")
   pattern <- "\\s+"
-  str_replace_all(string, pattern, " ")
+  str_replace_all(string, pattern, sub)
 }

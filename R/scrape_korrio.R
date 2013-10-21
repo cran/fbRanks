@@ -4,7 +4,6 @@
 scrape.korrio=function(url, file="Korrio", url.date.format="%B %Y %a %d", date.format="%Y-%m-%d", append=FALSE, get.surface=FALSE, ...){
 require(httr)
 require(XML)
-require(stringr)
 
 if(!is.character(file) | length(file)!=1 )
   stop("file must be a character vector.\n",call.=FALSE)

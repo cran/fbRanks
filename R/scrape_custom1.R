@@ -6,10 +6,10 @@
 ## last.td.tag is the last <td> tag in the table relative to all <td> tags in page; 0 means last tag; 2 means 2 before last tag
 ## Also score don't have dates on this site, just numbers for weeks; weeks should be in the date.format desired.
 ## Found on http://www.district-3.org
+## Found on North Puget Sound League; 2012-2013 first.td.tag=4; 2013-2014 first.td.tag=3
 ################################################################
 scrape.custom1 = function(url, file="Custom1", weeks=NULL, first.td.tag=3,last.td.tag=7,td.per.row=5, append=FALSE,...){
 require(XML)
-require(stringr)
 
 if(!is.character(file) | length(file)!=1)
   stop("file must be a character vector.\n",call.=FALSE)

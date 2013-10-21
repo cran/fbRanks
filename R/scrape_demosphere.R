@@ -1,11 +1,12 @@
 ################################################################
 ## Scrape scores off sites by Demosphere
+## table style 1 http://www.pugetsoundpremierleague.com/schedules/Spring2013/57712924.html
+## table style 2 http://www.norcalpremier.com/schedules/59258181/59258272.html
 ################################################################
-scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y", date.format="%Y-%m-%d", append=FALSE, get.surface=FALSE, ...){
+scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y", date.format="%Y-%m-%d", table.style=1, year=NULL, append=FALSE, get.surface=FALSE, ...){
   require(XML)
   require(RCurl)
   require(httr)
-  require(stringr)
   
   if(!is.character(file) | length(file)!=1 )
     stop("file must be a character vector.\n",call.=FALSE)
@@ -13,41 +14,75 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
     stop("append must be a TRUE/FALSE.\n",call.=FALSE)
   if(!is.logical(get.surface) | length(get.surface)!=1)
     stop("get.surface must be a TRUE/FALSE.\n",call.=FALSE)
-  
+  if(!(table.style %in% c(1,2)))
+    stop("table.style must be a 1 or 2.\n",call.=FALSE)
+  if(table.style==2 & is.null(year))
+    stop("if table.style is 2, you must specify the year as a 4 digit number.\n",call.=FALSE)
+  if(table.style==2 & !is.null(year)){
+    if(!is.numeric(year)) stop("if table.style is 2, you must specify the year as a 4 digit number.\n",call.=FALSE)
+    if(str_length(as.character(year))!=4) stop("if table.style is 2, you must specify the year as a 4 digit number.\n",call.=FALSE)
+  }
   #I could do just readHTMLTable(url) but I need doc later if I process the surface info
-  page <- GET(url, user_agent("httr-soccer-ranking"))
-  #doc = htmlParse(content(page, as = 'text'))
-  doc = htmlParse(text_content(page))
+  #   if(get.surface){
+  #     page <- GET(url, user_agent("httr-soccer-ranking"))
+  #   #doc = htmlParse(content(page, as = 'text'))
+  #   doc = htmlParse(text_content(page))
+  #   }else{ doc=url }
+  
+  doc=url
   
   # read the tables and select one labeled tbListGames2
   tables=readHTMLTable(doc)
   # the match info we want is in columns 1,4,5,6
-  my.table=tables$tblListGames2[,c(1,4,5,6),drop=FALSE]
-  # get rid of rows that are not matches.  Those will have GAME# in column 1
-  my.table=my.table[my.table[,1]!="GAME#",]
-  my.table[,5]=as.character(NaN)
-  
-  #Set the column headings
-  colnames(my.table)=c("date","home.team","home.score", "away.team", "away.score")
-  
-  # Set up the date column
-  my.table$date=as.character(my.table$date)
-  #date column sometimes has funky characters in the front
-  my.table$date=sapply(my.table$date,function(x){tmp=strsplit(x,", ");paste(unlist(tmp)[-1],collapse=" ")})
-  my.table$date=as.Date(my.table$date, url.date.format) #read in the dates
-  my.table$date=format(my.table$date, date.format) #reformat the dates
-  #now figure out which rows are dates and which are not; non-dates will be NAs
-  is.date=(1:dim(my.table)[1])[!is.na(my.table$date)]
-  for(i in 1:(length(is.date)-1)){
-    if(length((is.date[length(is.date)]+1):(is.date[i+1]-1))!=0)
-      my.table[(is.date[i]+1):(is.date[i+1]-1),"date"]=my.table[is.date[i],"date"]
+  if(table.style==1){
+    my.table=tables$tblListGames2[,c(1,4,5,6),drop=FALSE]
+    # get rid of rows that are not matches.  Those will have GAME# in column 1
+    my.table=my.table[my.table[,1]!="GAME#",]
+    #set up the away.score column
+    my.table[,5]=as.character(NaN)  
+    #Set the column headings
+    colnames(my.table)=c("date","home.team","home.score", "away.team", "away.score")    
+    # Set up the date column
+    my.table$date=as.character(my.table$date)
+    #date column sometimes has funky characters in the front
+    my.table$date=sapply(my.table$date,function(x){tmp=strsplit(x,", ");paste(unlist(tmp)[-1],collapse=" ")})
+    
+    
+    my.table$date=as.Date(my.table$date, url.date.format) #read in the dates
+    my.table$date=format(my.table$date, date.format) #reformat the dates
+    #now figure out which rows are dates and which are not; non-dates will be NAs
+    is.date=(1:dim(my.table)[1])[!is.na(my.table$date)]
+    if(length(is.date)>1){ #more than one date
+      for(i in 1:(length(is.date)-1)){
+        if(length((is.date[length(is.date)]+1):(is.date[i+1]-1))!=0)
+          my.table[(is.date[i]+1):(is.date[i+1]-1),"date"]=my.table[is.date[i],"date"]
+      }
+    }
+    if(length(is.date[length(is.date)]:dim(my.table)[1])!=0) #there are games for last date
+      my.table[is.date[length(is.date)]:dim(my.table)[1],"date"]=my.table[is.date[length(is.date)],"date"]
+    my.table=my.table[-is.date,,drop=FALSE]
+    
+    # Get rid of any rows that are NAs; those were associated with the match date and not a match result
+    my.table=my.table[!is.na(my.table$away.team),,drop=FALSE]
+  }#end of table.style 1
+  if(table.style==2){
+    my.table=tables$tblListGames2[,c(4,6,7,8),drop=FALSE]
+    # get rid of rows that are not matches.  Those will have NA in column 1
+    my.table=my.table[!is.na(my.table[,1]),]
+    #set up the away.score column
+    my.table[,5]=as.character(NaN)  
+    #Set the column headings
+    colnames(my.table)=c("date","home.team","home.score", "away.team", "away.score")
+    #Set up the dates
+    my.table$date=as.character(my.table$date)
+    my.table$date=str_remove.nonascii(my.table$date)
+    my.table=my.table[!is.na(as.Date(my.table$date,"%b %d")),]
+    my.table$date=paste(my.table$date,year)
+    my.table$date=as.Date(my.table$date, "%b %d %Y") #read in the dates
+    my.table$date=format(my.table$date, date.format) #reformat the dates 
+    # Get rid of any date rows that are NAs; those are not a match result
+    my.table=my.table[!is.na(my.table$date),,drop=FALSE]    
   }
-  if(length(is.date[length(is.date)]:dim(my.table)[1])!=0)
-    my.table[is.date[length(is.date)]:dim(my.table)[1],"date"]=my.table[is.date[length(is.date)],"date"]
-  my.table=my.table[-is.date,,drop=FALSE]
-  
-  # Get rid of any rows that are NAs; those were associated with the match date and not a match result
-  my.table=my.table[!is.na(my.table$away.team),,drop=FALSE]
   
   # Fix the score column
   my.table$home.score=as.character(my.table$home.score)
@@ -83,9 +118,13 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
     #to do this we need to write a function for readHTMLTable to use for each elmement
     getthelink=function(node){
       val=NULL #if no link, return null
-      if(!is.null(xmlChildren(node)$span)) #if element is a link will have span element (for this the demosphere pages)
-        if(!is.null(xmlChildren(xmlChildren(node)$span)$a)) #that span will have an a child
-          val=xmlAttrs(xmlChildren(xmlChildren(node)$span)$a) #href is at attribute of the "a" child
+      tmp=node
+      if(!is.null(xmlChildren(tmp)$div)) tmp=xmlChildren(tmp)$div
+      if(!is.null(xmlChildren(tmp)$div)) tmp=xmlChildren(tmp)$div
+      if(!is.null(xmlChildren(tmp)$span)) tmp=xmlChildren(tmp)$span
+      tmp=xmlChildren(tmp)$a
+      if(!is.null(tmp)) #that span will have an a child
+        val=xmlAttrs(tmp) #href is at attribute of the "a" child
       val
     }
     #now read in the table using the function to get the urls for the fields
@@ -146,5 +185,5 @@ scrape.demosphere = function(url, file="Demosphere", url.date.format="%B %d %Y",
   # Save
   if(!append) colsn=TRUE else colsn=FALSE
   if(str_sub(file, -4)!=".csv") file=paste(file,".csv",sep="")
-  write.table(my.table, file=file,row.names=FALSE,col.names=colsn,append=append,sep=",",qmethod="double")
+  write.table(my.table, file=file,row.names=FALSE,col.names=colsn,append=append,sep=",",qmethod="double",na="NaN")
 }

@@ -2,11 +2,14 @@
 ## export functions
 export(
   scrape.sportaffinity,
+  scrape.sportaffinity.main,
   scrape.sportaffinity.brackets,
   scrape.scoreboard,
   scrape.demosphere,
+  scrape.demosphere.main,
   scrape.korrio,
   scrape.gotsport,
+  scrape.gotsport.main,
   scrape.custom1,
   scrape.custom2,
   scrape.custom3,
@@ -25,6 +28,7 @@ export(
 )
 
 ## register S3 methods
+S3method(coef, fbRanks)
 S3method(print, fbRanks)
 S3method(plot, fbRanks)
 S3method(predict, fbRanks)
@@ -32,4 +36,6 @@ S3method(simulate, fbRanks)
 S3method(residuals, fbRanks)
 
 ## Imports
-importFrom(stats, simulate)
+import(stringr)
+importFrom("stats", simulate)
+importFrom("igraph", graph.edgelist, clusters, get.vertex.attribute)

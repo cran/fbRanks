@@ -1,3 +1,12 @@
+fbRanks 2.0 (10-14-2013)
+------------------------------------
+- Added fun="speedglm" and "glmnet" to allow fitting of models with speedglm() and glmnet() via packages speedglm and glmnet respectively.
+- Added more scrapers. See ?scrape.matches
+- Added coef.fbRanks function to return coefficient vectors and lists
+- Removed fun="glmer" because random effects approach doesn't work due to strong correlation between attack and defend random effects.
+- Changed predict.fbRanks to compute predictions from coefficients rather than use predict() for glm (or speedglm) objects.  Faster.  predict.fbRanks() still uses simulation to get probability of win rather than computing this analytically.
+- Changed residuals.fbRanks.  residuals for each game are added to scores data.frame that is part of each fit.  This is excessive use of memory but alas.  residuals.fbRanks uses that to return a list of residuals broken out by team.  This list is used for plotting.
+
 fbRanks 1.1 (4-1-2013)
 ------------------------------------
 - Fixed bug that caused printing to fail if no team dataframe passed into rank.teams()

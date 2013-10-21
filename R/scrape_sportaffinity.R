@@ -9,7 +9,6 @@
 ###############################################
 scrape.sportaffinity = function(url, file="SportAffinity", url.date.format="%B %d, %Y", date.format="%Y-%m-%d", append=FALSE, ...){
 require(XML)
-require(stringr)
 
 if(!is.character(file) | length(file)!=1)
   stop("file must be a character vector.\n",call.=FALSE)
@@ -19,7 +18,12 @@ if(!is.logical(append) | length(append)!=1)
 
 tables=readHTMLTable(url, as.data.frame = TRUE, stringsAsFactors = FALSE)
 tables=tables[unlist(lapply(lapply(tables,dim),length))==2]
-game.tables = unlist(lapply(tables,function(x){ all(c("Game","Home Team","Score","Away Team") %in% x[1,]) }))
+#2012-13 tables has colnames
+#game.tables = unlist(lapply(tables,function(x){ all(c("Game","Home Team","Score","Away Team") %in% colnames(x)) }))
+#2013-13 they don't
+#game.tables = unlist(lapply(tables,function(x){ all(c("Game","Home Team","Score","Away Team") %in% x[1,]) }))
+#later in 2013-14 seem to have colnames again
+game.tables = unlist(lapply(tables,function(x){ all(c("Game","Home Team","Score","Away Team") %in% x[1,]) | all(c("Game","Home Team","Score","Away Team") %in% colnames(x)) }))
 games=tables[game.tables]
 
 #Get the dates
@@ -33,8 +37,15 @@ my.dates=format(my.dates, date.format)
 
 my.table=data.frame()
 for(i in 1:length(games)){
-  gcols=games[[i]][1,]
-  tmp.games=games[[i]][-1,c(which(gcols=="Home Team"),which(gcols=="Home Team")+1,which(gcols=="Away Team"),which(gcols=="Away Team")+1)]
+  if("Home Team" %in% games[[i]][1,]) {
+    gcols=games[[i]][1,]
+    grows=-1
+  }else{ #probably has col names
+    gcols=colnames(games[[i]]) #2012-2013
+    #5-3-13; table struc has th as col names not names in row 1, don't remove first row
+    grows=1:dim(games[[i]])[1]
+  }
+  tmp.games=games[[i]][grows,c(which(gcols=="Home Team"),which(gcols=="Home Team")+1,which(gcols=="Away Team"),which(gcols=="Away Team")+1)]
   #need to deal with PK scores which appear as 1 - 3PK
   # Problem is that entry is inconsistent
    home.score=sapply(tmp.games[,2],function(x){str_trim(str_split(x,"-")[[1]][1])})

@@ -36,7 +36,7 @@ resolve.team.names=function(scores, team.resolver, team.data=NULL, use.team.sele
     cat("The following team names in team resolver don't match names in team file:\n")
     cat(as.character(bad.names),sep=", ")
     cat("\nTeam resolver and team data dataframes being returned.\n")
-    return(list(scores=scores, ok=FALSE, team.resolver=team.resolver, team.data=team.data, updated=TRUE))
+    return(list(scores=scores, ok=FALSE, team.resolver=team.resolver, team.data=team.data, updated=updated))
   }
 
   #Set up alternate names list
@@ -84,7 +84,7 @@ bad.names=c(scores$home.team[!(scores$home.team %in% display.names)], scores$awa
     team.resolver=tmp$team.resolver
     team.data=tmp$team.data
     bad.names=tmp$skipped.teams
-    updated=tmp$updated
+    updated=updated | tmp$updated  #might have set updated earlier
   }
 }
 

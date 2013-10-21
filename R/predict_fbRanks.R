@@ -56,6 +56,9 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
     cat("Model based on data from ")
     cat(format(x$min.date,x$date.format)); cat(" to ");  cat(format(x$max.date,x$date.format));  cat("\n---------------------------------------------\n")
   }
+  
+  #the list of coefficients for each cluster
+  coef.list = coef(object)$coef.list
   for(clus in 1:length(the.fits)){
     fit=the.fits[[clus]]
     names.in.clus = clusters$names[clusters$membership == clus]
@@ -67,7 +70,7 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
     #How names work; in fitted object predictors (except attack and defend) have the name xyz.f
     #In the scores file, they have the name xyz if applied to both home and away
     #and home.xyz if only for home and away.xyz if for away.  Must be a pair home. and away. in this case
-    pred.name=names(fit$model)[!(names(fit$model) %in% c("scores.team","attack","defend","(weights)"))]
+    pred.name=attr(fit$terms, "term.labels")[!(attr(fit$terms, "term.labels") %in% c("attack","defend"))]
     s.pred.name=home.away.predictors=both.predictors=character(0)
     if(length(pred.name)!=0){ #there are other predictors
       s.pred.name=pred.name
@@ -122,19 +125,14 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
       colnames(newdata2)[dim(newdata2)[2]]=pred.name[i]
     }
     
-    #Set up the factor coef so that I can reference them later
-    for(coef.name in names(fit$xlevels)){
-      coef.scores = rep(0,length(fit$xlevels[[coef.name]]))
-      names(coef.scores)=fit$xlevels[[coef.name]]
-      #what the coef is called in fit$coef
-      coefnames = paste(coef.name,fit$xlevels[[coef.name]],sep="")
-      matchnames = match(coefnames,names(fit$coef))
-      coef.scores[!is.na(matchnames)]=fit$coef[matchnames[!is.na(matchnames)]]
-      assign(paste(coef.name,".scores",sep=""),coef.scores)
-    }
-    #next lines are so the package passes the tests and doesn't complain that attack.scores and defend.scores do not exist
-    attack.scores=get("attack.scores")
-    defend.scores=get("defend.scores")
+#     #Set up the factor coef so that I can reference them later
+#     for(coef.name in names(fit$xlevels)){
+#       coef.scores = coef.list[[clus]][[coef.name]]
+#       assign(paste(coef.name,".scores",sep=""),coef.scores)
+#     }
+#     #next lines are so the package passes the tests during build and doesn't complain that attack.scores and defend.scores do not exist
+    attack.scores=coef.list[[clus]]$attack
+    defend.scores=coef.list[[clus]]$defend
     
     
     #I want to exclude predictions when the attack or defense score does not fit the normality assumption
@@ -148,8 +146,26 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
       newdata2$defend[newdata2$defend %in% bad.defend]=NA
     }
     
-    home.score=predict(fit,newdata=newdata1,type="response")
-    away.score=predict(fit,newdata=newdata2,type="response")
+    #Create predictions
+    prate=0
+    for(i in attr(terms(fit),"term.labels")){
+      prate=prate+coef(object)$coef.list[[clus]][[i]][newdata1[[i]]]
+    }
+    home.score=exp(prate)
+     #simulate n home.goals
+    home.goals = matrix(rpois(n*dim(newdata1)[1],exp(prate)),dim(newdata1)[1],n,byrow=FALSE)
+    rownames(home.goals)=newdata1$attack
+    
+    prate=0
+    for(i in attr(terms(fit),"term.labels")){
+      prate=prate+coef(object)$coef.list[[clus]][[i]][newdata2[[i]]]
+    }
+    away.score=exp(prate)
+    #simulate n away goals
+    away.goals = matrix(rpois(n*dim(newdata2)[1],exp(prate)),dim(newdata2)[1],n,byrow=FALSE)
+    rownames(away.goals)=newdata2$attack
+    
+    #Store attack and defend strengths in the scores that are returned for information
     home.attack=attack.scores[match(newdata1$attack,fit$xlevels$attack)]
     home.defend=defend.scores[match(newdata2$defend,fit$xlevels$attack)]
     away.attack=attack.scores[match(newdata2$attack,fit$xlevels$attack)]
@@ -164,32 +180,7 @@ predict.fbRanks=function(object, ..., newdata=list(home.team="foo", away.team="b
     scores$home.defend[rows.clus]=home.defend
     scores$away.attack[rows.clus]=away.attack
     scores$away.defend[rows.clus]=away.defend
-    
-    #Home goals
-    prate=exp(home.attack+away.defend)
-    factor.names = names(fit$xlevels)[!(names(fit$xlevels) %in% c("attack","defend"))]
-    for(coef.name in factor.names){
-      s.name=str_sub(coef.name,end=-3)
-      if(s.name %in% home.away.predictors) s.name = paste("home.",s.name,sep="")
-      factor.value=get(paste(coef.name,".scores",sep=""))
-      factor.effect=factor.value[match(scores[[s.name]][rows.clus],names(factor.value))]
-      prate=prate*exp(factor.effect)
-    }
-    home.goals = matrix(rpois(n*length(home.attack),prate),length(home.attack),n,byrow=FALSE)
-    rownames(home.goals)=newdata1$attack
-    
-    #Away goals
-    prate=exp(away.attack+home.defend)
-    for(coef.name in factor.names){
-      s.name=str_sub(coef.name,end=-3)
-      if(s.name %in% home.away.predictors) s.name = paste("away.",s.name,sep="")
-      factor.value=get(paste(coef.name,".scores",sep=""))
-      factor.effect=factor.value[match(scores[[s.name]][rows.clus],names(factor.value))]
-      prate=prate*exp(factor.effect)
-    }
-    away.goals = matrix(rpois(n*length(home.attack),prate),length(home.attack),n,byrow=FALSE)
-    rownames(away.goals)=newdata2$attack
-    
+       
     home.win=100*apply(home.goals>away.goals,1,sum)/n
     away.win=100*apply(away.goals>home.goals,1,sum)/n
     tie=100-home.win-away.win

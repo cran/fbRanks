@@ -10,12 +10,12 @@
   Helper functions not exported for users.
 }
 \usage{
-str_strip.white(string)
+str_strip.white(string, sub = " ")
 str_proper(string)
-str_remove.nonascii(string, sub = NULL)
+str_remove.nonascii(string, sub = "")
 str_remove(string, start = 1L, end = -1L, sub = "")
 detect.normality.outliers(x,alpha=0.05)
-scale.for.ranks(type = 1, base = 2, silent = TRUE)
+scale.for.ranks(type = 1, base = 2, silent = TRUE, str.disp.mult=1)
 }
 
 \arguments{
@@ -27,6 +27,7 @@ scale.for.ranks(type = 1, base = 2, silent = TRUE)
   \item{sub}{What to replace the removed characters with.}
   \item{base}{The base to which to scale the total strength.  By default it is base(2).  You want this to match the base used in your print call.}
   \item{silent}{ Whether to output the scale to the console (silent=FALSE). }
+  \item{str.disp.mult}{ Multiply the strength numbers in the column names by this number. }
 }
 
 \details{  

@@ -1,8 +1,7 @@
-create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=NULL, date.format="%Y-%m-%d"){
+create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=NULL, date.format="%Y-%m-%d", na.remove=FALSE){
   #This creates scores and teams dataframes from the scores files and team files
   #team.resolver is 2 columns: name=team name (display name), alt.name=name in match file
   #team info is many columns.  name=team name (display name)
-  require(stringr)
   updated=FALSE #if the team.resolver or teams.file changed with user input
   
   if(missing(scores.file)) stop("The name of a scores file (csv) must be passed in.\n",call.=FALSE)
@@ -16,9 +15,14 @@ create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=N
     if(length(scores)==0){ 
       scores=read.csv(file=filename, colClasses=c("character"),strip.white=TRUE, stringsAsFactors=FALSE)
       colnames(scores)=tolower(str_strip.white(names(scores)))
-    }else{
+      if(!all(c("date","home.team","home.score","away.team","away.score") %in% colnames(scores)))
+         stop(paste(filename,"is missing date, home.team, home.score, away.team, or away.score column.\n"), call.=FALSE)
+      if(na.remove) scores = scores[!(scores$home.score=="NaN" & scores$away.score=="NaN"),]
+      }else{
       next.f=read.csv(file=filename, colClasses=c("character"),strip.white=TRUE, stringsAsFactors=FALSE)
       colnames(next.f)=tolower(str_strip.white(names(next.f)))
+      if(!all(c("date","home.team","home.score","away.team","away.score") %in% colnames(next.f)))
+         stop(paste(filename,"is missing date, home.team, home.score, away.team, or away.score column.\n"), call.=FALSE)
       if(any(!(names(next.f) %in% names(scores)))){
         new.f.names=names(next.f)[!(names(next.f) %in% names(scores))]
         scores[new.f.names]=NA
@@ -37,13 +41,15 @@ create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=N
           scores.warning[[ffile]]=list(NA.in.f.file=TRUE)
         }else{ scores.warning[[ffile]][["NA.in.f.file"]]=TRUE }
       }
-      bad.team.names=str_detect(next.f$home.team, "Place Flight") | str_detect(next.f$away.team, "Place Flight")
+      bad.team.names=str_detect(next.f$home.team, "Place Flight") | str_detect(next.f$away.team, "Place Flight") |
+                    str_detect(tolower(next.f$away.team), "quarterfinal") | str_detect(tolower(next.f$away.team),"semi-final")
       if(any(bad.team.names)){
         next.f=next.f[!bad.team.names,,drop=FALSE]
         if(length(scores.warning[[ffile]])==0){
           scores.warning[[ffile]]=list(non.team.name.in.f.file=TRUE)
         }else{ scores.warning[[ffile]][["non.team.name.in.f.file"]]=TRUE }
       }
+      if(na.remove) next.f = next.f[!(next.f$home.score=="NaN" & next.f$away.score=="NaN"),]
       scores=rbind(scores,next.f) 
     } 
   }
@@ -176,6 +182,5 @@ create.fbRanks.dataframes=function(scores.file, team.resolver=NULL, teams.file=N
   team.resolver=tmp$team.resolver
   team.data=tmp$team.data
   ok=tmp$ok
-  
   return(list(scores=scores, raw.scores=raw.scores, teams=team.data, team.resolver=team.resolver, updated=updated, ok=ok))
 }

@@ -1,9 +1,9 @@
-plot.fbRanks=function(x,...,which="residuals",annotate=list(title=TRUE)){
+plot.fbRanks=function(x,...,which="residuals",annotate=list(title=TRUE), team.resids=NULL, min.date=NULL, max.date=NULL){
   if(length(which)>1) devAskNewPage(TRUE)
   if(which=="residuals"){
     extra=list(...)
     team.names=extra$Name
-    team.resids = residuals(x)
+    if(missing(team.resids)) team.resids = residuals(x)
     if(identical(team.names,"all")) team.names = names(team.resids)
     if(!all(team.names %in% names(team.resids))){
       cat("The following team names are not recognized and will be ignored:\n")
@@ -13,34 +13,56 @@ plot.fbRanks=function(x,...,which="residuals",annotate=list(title=TRUE)){
     }
     for(i in team.names){
     if(dim(team.resids[[i]])[1]==0) next
-    ylim=c(min(-3,team.resids[[i]]$attack.residuals-.5,-1*team.resids[[i]]$defense.residuals-.5,na.rm=TRUE),
-           max(3,team.resids[[i]]$attack.residuals+.5,-1*team.resids[[i]]$defense.residuals+.5,na.rm=TRUE))
-    xlim=c(min(team.resids[[i]]$date),min(max(team.resids[[i]]$date),as.Date(x$max.date, x$date.format)))
+    if(missing(min.date)) xmin=min(team.resids[[i]]$date) else xmin=min.date
+    if(missing(max.date)) xmax=min(max(team.resids[[i]]$date),as.Date(x$max.date, x$date.format)) else xmax=max.date
+    
+#     ylim=c(min(-3,team.resids[[i]]$attack.residuals-.5,-1*team.resids[[i]]$defense.residuals-.5,na.rm=TRUE),
+#            max(3,team.resids[[i]]$attack.residuals+.5,-1*team.resids[[i]]$defense.residuals+.5,na.rm=TRUE))
+    xlim=c(xmin,xmax)
     ylim=c(-6,6)
     cat("Actual-Predicted Residuals Plot\n")
     if(x$time.weight.eta!=0) cat("Model is time-weighted. A model optimized for current date is being used to predict past dates.\n")
-    plot(team.resids[[i]]$date,team.resids[[i]]$attack.residuals,xlab="",
-         ylab="Actual versus Predicted Goals",
-         xlim=xlim,ylim=ylim)
-    points(team.resids[[i]]$date,-1*team.resids[[i]]$defense.residuals,col="red",pch=2)
+    xplot=team.resids[[i]]$date
+    yplot=team.resids[[i]]$attack.residuals
+    plot(yplot ~ xplot, axes = FALSE, xlab="", ylab="Actual versus Predicted Goals",xlim=xlim,ylim=ylim)
+    ## add in axis on side 2
+    axis(2)
+
+    ## compute where we want the ticks for the months
+    monthYr = format(xmin,format="%Y-%m")
+    first=as.Date(paste(monthYr,"-01",sep=""))
+    ticks.at <- seq(first, xmax, by = "months")
+    ## format the labels as abbreviated month names
+    ticks.lab <- format(ticks.at, format = "%b")
+    ## indicator variable; is month January?
+    m1 <- ticks.lab == "Jan"
+    ## plot small ticks and labels for months not Jan
+    Axis(xplot, at = ticks.at[!m1], side = 1, 
+         labels = ticks.lab[!m1], las = 2, cex.axis = 0.7)
+    ## plot the default tick locations for years
+    Axis(xplot, side = 1, las = 2)
+    ## add the box
+    box()
+    
+    points(xplot,-1*team.resids[[i]]$defense.residuals,col="red",pch=2)
     
     game.dates=team.resids[[i]]$date
     game.resids=-1*team.resids[[i]]$defense.residuals
     bad=is.na(game.resids)
     if(length(game.dates[!bad])>10){ #add the time line
-    x=game.dates[!bad]
-    y=game.resids[!bad]
-    lo <- loess(y~as.numeric(x),degree=2)
+    xplot=game.dates[!bad]
+    yplot=game.resids[!bad]
+    lo <- loess(yplot~as.numeric(xplot),degree=2)
     #plot(x,y,ylim=c(-4,4),col="red",cex=.5)
-    lines(x,predict(lo), col='red', lwd=2)
+    lines(xplot,predict(lo), col='red', lwd=2)
     game.dates=team.resids[[i]]$date
     game.resids=team.resids[[i]]$attack.residuals
     bad=is.na(game.resids)
-    x=game.dates[!bad]
-    y=game.resids[!bad]  
-    lo <- loess(y~as.numeric(x),degree=2)
+    xplot=game.dates[!bad]
+    yplot=game.resids[!bad]  
+    lo <- loess(yplot~as.numeric(xplot),degree=2)
     #points(x,y,ylim=c(-4,4),col="blue",pch=2,cex=.5)
-    lines(x,predict(lo), col='blue', lwd=2)
+    lines(xplot,predict(lo), col='blue', lwd=2)
     #abline(h=0,lty=3)
     }
     

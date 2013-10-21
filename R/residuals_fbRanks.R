@@ -1,6 +1,4 @@
 residuals.fbRanks = function(object, ...){
-require(stringr)
-
 x=object
 team.data = x$teams
 glm.fits=x$fit

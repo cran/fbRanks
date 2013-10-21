@@ -11,12 +11,20 @@
 # newdata, same as for predict()
 ################################################################
 simulate.fbRanks=function(object, nsim=100000, seed=NULL, ..., newdata=list(home.team="foo", away.team="bar"),
+                         bracket.names=NULL,
                          max.date="2100-6-1", min.date="1900-5-1", silent=FALSE,
                          points.rule="tournament 10pt",tie.rule=list(tie.rule.gd.max=10),
                          non.equal.games.rule=list(n.games=3,rule="proportional"),
                          show.matches=FALSE, groups.column=NULL){
-  require(stringr)
   x=object
+  
+  if(!missing(bracket.names)){
+    if(!is.list(bracket.names)){
+      stop("bracket.names must be a list with each list element a different vector of team names",call.=FALSE)
+    }
+    if(!missing(groups.column))
+      cat("You passed in both bracket.names and groups.column.  Bracket.names will be ignored and groups.column used.\n")
+  }
   
   if(!is.list(non.equal.games.rule)){
     stop("non.equal.games.rule must be a list with n.games (a number) and rule (a character name).\n",call.=FALSE)
@@ -95,13 +103,31 @@ if(is.list(points.rule)){
 fbRanks=x
 
 #set up the groupings names
-if(is.null(groups.column)){ glevels=0 }else{
+if(is.null(groups.column)){ 
+  glevels=0
+  scores.teams=unique(c(as.character(scores$home.team),as.character(scores$away.team)))
+  if(is.null(bracket.names)){
+    bracket.names=list(Bracket=scores.teams)
+}else{
+  if(!all(unlist(bracket.names) %in% scores.teams))
+    stop("Not all the bracket.names are in the newdata scores file.",call.=FALSE)  
+}
+  }else{
 if(is.factor(scores[groups.column])){ glevels=levels(scores[groups.column])
 }else{ glevels=unique(scores[[groups.column]]) }
+bracket.names=list()
+for(gval in glevels){
+  bscores=scores
+  bscores=scores[scores[groups.column]==gval,,drop=FALSE]
+  bteams=unique(c(as.character(bscores$home.team),as.character(bscores$away.team)))
+  bracket.names[[gval]]=bteams
 }
+}
+if(is.null(names(bracket.names)))
+  names(bracket.names)=paste("Bracket",LETTERS[1:length(bracket.names)])
 
 all.standings=list()
-
+glevels=0  #4-7 hack to use bracket.names list instead
 for(gval in glevels){
   bscores=scores
   if(!identical(glevels,0)) bscores=scores[scores[groups.column]==gval,,drop=FALSE]
@@ -109,6 +135,7 @@ for(gval in glevels){
   pout=predict(fbRanks,newdata=bscores,silent=TRUE,n=nsim)
   #team names for this bracket
   bteams=unique(c(as.character(pout$scores$home.team),as.character(pout$scores$away.team)))
+
   n.teams=length(bteams)  #in bracket
   n.games=dim(pout$scores)[1] #in bracket
   #Set up a holder for the home team for each of the bracket games
@@ -152,25 +179,34 @@ for(gval in glevels){
     if(non.equal.games.rule$rule=="proportional"){
       points[team,]=points[team,]*(non.equal.games.rule$n.games/n.games.team)
     }
-  } 
+  }
+} #hack 4-7-2013; set glevels to 0 so everything is simed together;
+  #afterwards apply the brackets
+  for(gval in names(bracket.names)){
+    bteams=bracket.names[[gval]]
+  n.teams=length(bteams)
+  #This is a hack to eliminate any ties (after GD tie breaker rule). Basically it applies a coin-flip to ties
+    #this is a hack since this isn't how tournaments do this.  They use a head-to-head rule then GF rule usually
+  points=points+apply(gds,2,function(x){x/(10*(sum(x-min(x))))+runif(length(x),-1,1)/1000})
   
+  #get just the points for the group/bracket
+  bpoints=points[bteams,]
   #Now get the standings; this is terse code; 
   #what it is doing is for each column, run the sort function and get the ordering
-  points=points+apply(gds,2,function(x){x/(10*(sum(x-min(x))))+runif(length(x),-1,1)/1000})
   standing.function=function(x){
     #this applies a gd tie breaker with random selection if the there are ties after applying the GD breaker
     places=1:n.teams
     places[sort(x,index.return=TRUE,decreasing=TRUE)$ix]=places
     places
   }
-  standings=apply(points,2,standing.function)
+  standings=apply(bpoints,2,standing.function)
   rownames(standings)=bteams
   
   #Set up the matrix that will hold the standings
   pstandings=matrix(0,n.teams,n.teams)
   rownames(pstandings)=bteams
   #column names will the 1st-nth
-  colnames(pstandings)=paste(1:length(bteams),c("st","nd","rd",rep("th",length(bteams)-3)),sep="")
+  colnames(pstandings)=paste(1:n.teams,c("st","nd","rd",rep("th",length(bteams)-3)),sep="")
 
   for(team in bteams){
     #need to wrap standings in factor so I can set levels.  Otherwise won't get the 0s when say a team is never 4th
@@ -179,7 +215,7 @@ for(gval in glevels){
   
   if(!silent){
     cat("\n");
-    if(gval!=0) cat(gval)
+    if(length(bracket.names)!=1) cat(gval)
     cat("\n");
   print(round(pstandings*100,digits=0))
     cat("\n");
@@ -187,7 +223,8 @@ for(gval in glevels){
   #Predict games
   if(show.matches){ cat("\n"); predict(fbRanks,newdata=bscores) }
   
-  if(gval!=0) all.standings[[gval]]=pstandings else all.standings=pstandings
+  if(length(bracket.names)!=1) all.standings[[gval]]=pstandings else all.standings=pstandings
 }
-  invisible(standings)
+
+  invisible(all.standings)
 }

@@ -41,7 +41,8 @@ data(B00data)
 
 #fit a model using a particular date range for B00 teams
 #set the data range to just be the summer games of WA teams
-x=rank.teams(scores=B00.scores, teams=B00.teams, min.date="2012-5-1", max.date="2012-9-8", silent=TRUE)
+x=rank.teams(scores=B00.scores, teams=B00.teams, 
+             min.date="2012-5-1", max.date="2012-9-8", silent=TRUE)
 
 #x is a fbRanks object with the fitted model and ranks, and the scores and teams data.frames
 #the scores data.frames has all the data, not just the summer data

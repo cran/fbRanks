@@ -3,7 +3,7 @@
 \alias{residuals.fbRanks}
 \title{ Residuals function for fbRanks Objects }
 \description{
-  The \code{\link{rank.teams}} function outputs fbRanks objects.  \code{residuals(fbRanks)}., where fbRanks is one's output from a \code{\link{rank.teams}} call, return the model residuals for each match in the \code{fbRanks$scores} data frame.
+  The \code{\link{rank.teams}} function outputs fbRanks objects.  \code{residuals(fbRanks)}., where fbRanks is one's output from a \code{\link{rank.teams}} call, returns the model response residuals (data minus fitted values) for each match in the \code{fbRanks$scores} data frame.  The output is organized as a list by team.  If you just want the response residuals for each match, that is in fbRanks$scores$home.residuals and $away.residuals.
 }
 \usage{
 \method{residuals}{fbRanks}(object, ...)
@@ -14,7 +14,7 @@
  }
 
 \value{
-  A list of the residuals for each team.  It's rather verbose.  You probably want to assign it to a variable and work with that.  Look at \code{\link{predict.fbRanks}}.  That provides similar output in the $scores variable.
+  A list of the response residuals (data minus fitted values) for each team.  It's rather verbose.  You probably want to assign it to a variable and work with that.  Look at \code{\link{predict.fbRanks}}.  That provides similar output in the $scores variable.
 }
 \author{ 
   Eli Holmes, Seattle, USA.  

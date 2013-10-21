@@ -4,7 +4,6 @@
 ###############################################
 scrape.usclub = function(url, file="USClub", url.date.format="%A%m/%d/%Y", date.format="%Y-%m-%d", append=FALSE, ...){
 require(XML)
-require(stringr)
 
 if(!is.character(file) | length(file)!=1 )
   stop("file must be a character vector.\n",call.=FALSE)
@@ -12,9 +11,9 @@ if(!is.logical(append) | length(append)!=1)
   stop("append must be a TRUE/FALSE.\n",call.=FALSE)
 
 tb=readHTMLTable(url, as.data.frame = TRUE, stringsAsFactors = FALSE)
-
 tb.start=which(names(tb)=="ctl00_ContentPlaceHolder1_TableBtn")+3
-tb.end=which(names(tb)=="ctl00_ContentPlaceHolder1_ChangesTable")-1
+#tb.end=which(names(tb)=="ctl00_ContentPlaceHolder1_ChangesTable")-1
+tb.end=tb.start+min(which(!(names(tb)[tb.start:length(tb)]=="NULL")))-2
 game.tbs=tb[seq(tb.start,tb.end,2)]
 for(i in 1:length(game.tbs)){
   this.tb=game.tbs[[i]]

@@ -3,7 +3,6 @@
 #  ignore=c("b00","bu12", "u12", " 00", "'", "-", "[(]2000 boys[)]","2000B","2012","RCL")
 ###################################
 construct.team.file=function(scores.file="scores.csv", add.to.name="", file="team_template.csv", ignore=""){
-library(stringr)
 
 #read in the scores files (match files)
 scores=data.frame()

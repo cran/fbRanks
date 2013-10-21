@@ -12,7 +12,6 @@
 ###############################################
 scrape.gotsport = function(url, file="GotSport", tb.num=10, url.date.format="%m/%d/%Y", table.style=1, date.format="%Y-%m-%d", append=FALSE, ...){
 require(XML)
-require(stringr)
 
 if(!is.character(file) | length(file)!=1 )
   stop("file must be a character vector.\n",call.=FALSE)
@@ -22,14 +21,19 @@ if(!is.logical(append) | length(append)!=1)
   stop("append must be a TRUE/FALSE.\n",call.=FALSE)
 
 
-tb=readHTMLTable(url, as.data.frame = TRUE, stringsAsFactors = FALSE)
+if(table.style==1){ tb=readHTMLTable(url, as.data.frame = TRUE, stringsAsFactors = FALSE, header=FALSE)
+}else{ tb=readHTMLTable(url, as.data.frame = TRUE, stringsAsFactors = FALSE, header=FALSE) }
 if(length(tb)<tb.num){
   cat(paste(file,": The selected tb.num=",tb.num,"is bigger than the number of tables.\nThe list of tables is being sent to the output.\nIf the game table has 5 columns and no header, try table.style=2.\n"))
   return(tb)
 }
 if(table.style==1){
 if(dim(tb[[tb.num]])[2]!=8){
-  cat(paste(file,": The selected tb.num=",tb.num,"does not look right.  It should have 8 columns.\nPass in a different table number (try 10,11 or 12).\nThe list of tables is being sent to the output.\nIf the game table has 5 columns and no header, try table.style=2.\n"))
+  ok.tables=which(unlist(lapply(tb,function(x){ifelse(is.null(dim(x)), FALSE, dim(x)[2]==8)})))
+  cat(paste(file,": The selected tb.num=",tb.num,"does not look right.  It should have 8 columns.\n",
+             ifelse(length(ok.tables)==0,"No tables have 8 columns. Try table.style=2.\n",
+                 paste("tb.num",ok.tables,"have 8 columns.\n",collapse=" ")),
+                    "The list of tables is being sent to the output.\nIf the game table has 5 columns and no header, try table.style=2.\n"))
   return(tb)
 }
 my.table=tb[[tb.num]][,c(-2,-7,-8),drop=FALSE]
@@ -63,6 +67,7 @@ colnames(my.table)=c("date","home.team","home.score", "away.team", "away.score")
 
 #Clean up NAs
 my.table=my.table[!is.na(my.table$away.score),,drop=FALSE]
+my.table=my.table[!is.na(my.table$date),,drop=FALSE]
 my.table=my.table[!(my.table$home.team=="Home Team"),,drop=FALSE]
 
 #Replace missing scores with NaN

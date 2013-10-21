@@ -1,4 +1,4 @@
-scale.for.ranks=function(type=1, base=2, silent=TRUE){
+scale.for.ranks=function(type=1, base=2, silent=TRUE, str.disp.mult=1){
 
 #cat("strength differential: win-tie-loss  Goal differential: median, 25%>this, 10%>this\n")
 for(spr in c(.1,.5,1,1.5,2,2.5,3,3.5)){
@@ -47,7 +47,7 @@ if(type==2) spr.seq=exp(spr.seq)
 #print(gdat,nsmall=0)
 
 dat=rbind(round(100*win),100-round(100*win)-round(100*loss),round(100*loss))
-colnames(dat)=format(spr.seq,width=4)
+colnames(dat)=format(str.disp.mult*spr.seq,width=4)
 rownames(dat)=c("win","tie", "lose")
 if(!silent){
   cat("total strength difference and probability of win, tie, or loss\n")

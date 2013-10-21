@@ -4,7 +4,6 @@
 team.name.select <- function(newname=NULL, team.resolver, team.data, scores, type="alt.name")
 { 
   require(tcltk)
-  require(stringr)
   return.stuff=FALSE #You have to hit Save or Finish to return stuff
   
   gogetem <- function() {
@@ -151,6 +150,8 @@ team.name.select <- function(newname=NULL, team.resolver, team.data, scores, typ
         #assign in the calling function
         assign("team.dat",team.dat,envir=sys.frame(fun.frm))
       }
+      return.stuff=TRUE
+      assign("return.stuff",TRUE,envir=sys.frame(fun.frm))
     }
   }
   
@@ -317,7 +318,7 @@ team.name.select <- function(newname=NULL, team.resolver, team.data, scores, typ
     return(list(team.resolver=team.res, team.data=team.dat, skipped.teams=skipped.teams, updated=TRUE)) #updated team resolver
   }
   if(return.stuff==FALSE) 
-    return(list(team.resolver=team.resolver, team.data=team.data, skipped.teams=newname, updated=FALSE)) #updated team resolver
+    return(list(team.resolver=team.resolver, team.data=team.data, skipped.teams=newname, updated=FALSE)) #did not update team resolver
   
 }
 
